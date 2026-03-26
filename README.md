@@ -1,28 +1,7 @@
-
-
-```markdown
 # 视频数据集预处理管道
 
 > 面向 **说话人视频生成（Talking Head Generation）** 任务的自动化数据清洗与标准化工具。  
 > 从原始视频出发，经过 7 个阶段的筛选与处理，输出高质量、格式统一的训练样本。
-
----
-
-## 目录
-
-- [项目背景](#项目背景)
-- [流程总览](#流程总览)
-- [环境要求](#环境要求)
-- [安装步骤](#安装步骤)
-- [快速开始](#快速开始)
-- [各阶段详解](#各阶段详解)
-- [目录结构](#目录结构)
-- [输出说明](#输出说明)
-- [配置参数](#配置参数)
-- [断点续传](#断点续传)
-- [性能建议](#性能建议)
-- [常见问题](#常见问题)
-- [技术细节](#技术细节)
 
 ---
 
@@ -68,7 +47,7 @@
                      │ 独立 clip 列表
                      ▼
 ┌─────────────────────────────────────────────────┐
-│  阶段 2: 跳切检测 [纯分析，不写文件]              │
+│  阶段 2: 跳切检测              │
 │  · 光流突变检测（帧间运动量突变）                  │
 │  · HSV 颜色直方图突变检测                         │
 │  · AND 逻辑双重确认，减少误报                     │
@@ -77,7 +56,7 @@
                      │ 通过的 clip
                      ▼
 ┌─────────────────────────────────────────────────┐
-│  阶段 3: 人脸位置分析 [纯分析，不写文件]           │
+│  阶段 3: 人脸位置分析          │
 │  · MediaPipe Face Detection 逐帧检测             │
 │  · 统计人脸中心位置的中位数                       │
 │  · 计算全局裁剪框（正方形，人脸居中）              │
@@ -86,7 +65,7 @@
                      │ 裁剪参数 (x, y, w, h)
                      ▼
 ┌─────────────────────────────────────────────────┐
-│  阶段 4: 手部遮挡检测 [纯分析，不写文件]           │
+│  阶段 4: 手部遮挡检测           │
 │  · MediaPipe Pose 提取手腕/指尖关键点             │
 │  · 像素级距离计算（修正宽高比畸变）                │
 │  · 检测手部对嘴部区域的遮挡                       │
@@ -95,7 +74,7 @@
                      │ 通过的 clip
                      ▼
 ┌─────────────────────────────────────────────────┐
-│  阶段 5: 单次编码输出 [唯一的有损编码步骤]         │
+│  阶段 5: 单次编码输出         │
 │  · 一条 ffmpeg 命令完成：                         │
 │    - FPS 转换 → 25fps                            │
 │    - 人脸居中裁剪                                 │
@@ -119,19 +98,6 @@
               输出至 5_final/
 ```
 
-### 核心设计原则
-
-**分析与编码分离**：阶段 2~4 只做帧级分析（读取像素、计算特征），不写入任何文件。
-所有空间变换（FPS、裁剪、缩放、音频）合并到阶段 5 的 **一次 ffmpeg 调用** 中完成，
-最大程度减少有损编码带来的质量损失。
-
-```
-传统方案: 原始 →[编码1]→ FPS →[编码2]→ 裁剪 →[编码3]→ ...  (3~4次有损编码)
-本方案:   原始 →[分析]→[分析]→[分析]→[编码1]→ 最终输出      (1次有损编码)
-```
-
----
-
 ## 环境要求
 
 ### 系统要求
@@ -141,7 +107,7 @@
 | Python | 3.8+ | 推荐 3.10 |
 | FFmpeg | 4.0+ | 需在 PATH 中可用 |
 | ffprobe | 随 FFmpeg 安装 | 视频信息探测 |
-| CUDA | 11.0+ | SyncNet GPU 推理（可选） |
+| CUDA | 11.8+ | SyncNet GPU 推理（可选） |
 
 ### Python 依赖
 
@@ -160,8 +126,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-repo/video-preprocess.git
-cd video-preprocess
+git clone https://github.com/hyfevian/dataset_preprocess.git
+cd dataset_preprocess
 ```
 
 ### 2. 创建虚拟环境
@@ -174,11 +140,11 @@ conda activate preprocess
 ### 3. 安装依赖
 
 ```bash
-pip install opencv-python numpy mediapipe==0.10.14 scenedetect[opencv] torch
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### 4. 验证 FFmpeg
-
+将ffmpeg.exe 和ffprobe.exe 放入本文件夹
 ```bash
 ffmpeg -version
 ffprobe -version
@@ -511,26 +477,6 @@ output_dataset/
 }
 ```
 
-### clip 状态值说明
-
-| 状态 | 含义 |
-|------|------|
-| `passed` | 通过所有筛选，已输出到 `5_final/` |
-| `rejected` | 被某个阶段淘汰 |
-| `error` | 处理过程中发生异常 |
-
-### video 状态值说明
-
-| 状态 | 含义 |
-|------|------|
-| `processing` | 正在处理中 |
-| `completed` | 至少有一个 clip 通过 |
-| `all_rejected` | 所有 clip 都被淘汰 |
-| `no_valid_clips` | 切片阶段就没有产生有效片段 |
-| `error` | 视频级别的严重错误 |
-
----
-
 ## 配置参数
 
 ### 命令行参数
@@ -597,49 +543,6 @@ encode_single_pass(input_path, output_path,
 
 ---
 
-## 断点续传
-
-管道内置断点续传机制，适合处理大型数据集时应对中断：
-
-### 工作原理
-
-1. 每处理完一个视频，自动保存状态到 `pipeline_status.json`
-2. 状态文件使用 **原子写入**（先写临时文件再 `os.replace`），断电不会损坏
-3. 重启时自动检测已有状态文件，跳过已完成的视频和 clip
-4. 每个阶段的输出文件都会验证有效性，损坏的半成品会被自动清理
-
-### 使用方式
-
-```bash
-# 首次运行
-python main_pipeline.py --input ./videos --output ./dataset
-
-# 中断后，直接用相同命令重新运行即可
-python main_pipeline.py --input ./videos --output ./dataset
-# 会自动检测到 pipeline_status.json，从断点继续
-```
-
-### 强制重新处理
-
-```bash
-# 删除状态文件即可重新开始
-rm output_dataset/pipeline_status.json
-
-# 或者只重新处理某个视频（手动编辑 JSON，将其 state 改为 "processing"）
-```
-
----
-
-## 性能建议
-
-### 硬件建议
-
-| 数据规模 | CPU | RAM | GPU | 存储 |
-|---------|-----|-----|-----|------|
-| < 100 视频 | 4 核 | 8 GB | 可选 | SSD 50GB |
-| 100~1000 视频 | 8 核 | 16 GB | 推荐 | SSD 200GB |
-| > 1000 视频 | 16+ 核 | 32 GB | 必需 | SSD 500GB+ |
-
 ### 耗时估计
 
 | 阶段 | 每个 10s clip 耗时 | 瓶颈 |
@@ -653,138 +556,6 @@ rm output_dataset/pipeline_status.json
 | SyncNet | ~10s | GPU (PyTorch) |
 
 **总计**：每个 10s clip 约 **20~30 秒**（含 SyncNet）
-
-### 优化技巧
-
-1. **SSD 存储**：避免机械硬盘成为 IO 瓶颈
-2. **GPU 加速**：SyncNet 推理在 GPU 上快 5~10 倍
-3. **减少不必要的步骤**：如果数据源质量较高，可以放宽阈值
-4. **预先过滤**：手动删除明显不合格的视频（如纯风景、动画等）
-
----
-
-## 常见问题
-
-### Q: mediapipe 安装失败或报错 "no attribute solutions"
-
-```bash
-# 先卸载再安装指定版本
-pip uninstall -y mediapipe
-pip install mediapipe==0.10.14
-```
-
-> 注意：mediapipe 0.10.15+ 可能移除了 solutions API，请使用 0.10.14
-
-### Q: FFmpeg 不在 PATH 中
-
-```bash
-# 验证
-ffmpeg -version
-
-# Windows: 下载后将 bin 目录添加到系统 PATH
-# Linux: sudo apt install ffmpeg
-# macOS: brew install ffmpeg
-```
-
-### Q: SyncNet 分数始终为 None
-
-检查以下几项：
-1. `SYNCNET_REPO` 环境变量是否正确设置
-2. `syncnet_python/data/syncnet_v2.model` 模型文件是否存在
-3. SyncNet 依赖是否安装（`pip install torch torchvision`）
-4. 视频是否包含音频轨（无音频的视频无法计算同步分数）
-
-```bash
-# 手动测试 SyncNet
-cd /path/to/syncnet_python
-python run_pipeline.py --videofile test.mp4 --reference test --data_dir /tmp/test
-python run_syncnet.py --initial_model data/syncnet_v2.model --videofile test.mp4 --reference test --data_dir /tmp/test
-```
-
-### Q: 通过率太低
-
-可以尝试放宽以下参数：
-
-```python
-# 人脸分析：允许更多无脸帧
-analyze_face_positions(video_path, max_no_face_ratio=0.30)
-
-# 手部遮挡：提高容忍度
-filter_hand_occlusion_analysis(video_path, max_occlusion_ratio=0.10)
-
-# SyncNet：降低要求
-filter_syncnet(video_path, output_dir, lse_c_threshold=2.0, lse_d_threshold=12.0)
-```
-
-### Q: 通过率太高（混入低质量数据）
-
-收紧参数：
-
-```python
-# 跳切检测：更敏感
-detect_jump_cuts(video_path, flow_sudden_threshold=15.0, hist_threshold=0.25)
-
-# SyncNet：提高要求
-filter_syncnet(video_path, output_dir, lse_c_threshold=5.0, lse_d_threshold=7.0)
-```
-
-### Q: 磁盘空间不足
-
-- 中间文件（`4_ready/`）会在每个 clip 处理完成后自动清理
-- 场景切片（`2_sliced/`）在全部处理完成后可手动删除
-- 最终只需保留 `5_final/` 和 `pipeline_status.json`
-
-```bash
-# 处理完成后清理中间目录
-rm -rf output_dataset/2_sliced output_dataset/4_ready
-```
-
-### Q: 如何只运行部分阶段
-
-当前版本不支持单独运行某个阶段。如果需要跳过某个阶段，可以修改 `main_pipeline.py` 中 `process_single_clip` 函数，注释掉不需要的阶段。
-
----
-
-## 技术细节
-
-### 为什么使用 AND 而非 OR 做跳切检测？
-
-| 逻辑 | 误报场景 | 误报率 |
-|------|---------|--------|
-| OR | 快速转头、表情变化、环境光闪烁，任一信号触发即判定 | 高 |
-| AND | 必须同时出现光流突变和颜色突变 | 低 |
-
-正常的说话视频中，快速转头会触发光流突变但颜色分布不变；灯光变化会改变颜色但不会产生大的光流。只有真正的镜头切换才会同时满足两个条件。
-
-### 为什么检测嘴部而非鼻子？
-
-对于 Talking Head 任务，关键是嘴唇运动。手部遮挡鼻子但不遮挡嘴巴的情况（如擦鼻子），对训练影响有限。以嘴部中心为基准可以更精确地判断是否影响唇部可见性。
-
-### 为什么用像素级距离而非归一化距离？
-
-MediaPipe 输出的是归一化坐标 (0~1)。对于 16:9 视频：
-- 归一化距离 0.1 在 x 方向 = 192px，在 y 方向 = 108px
-- 使用归一化欧氏距离会导致水平方向的遮挡更难被检测到
-- 转换为像素坐标后计算欧氏距离，阈值与方向无关
-
-### CRF 18 够用吗？
-
-| CRF 值 | 质量 | 适用场景 |
-|--------|------|---------|
-| 0 | 无损 | 存档 |
-| 15 | 接近无损 | 专业后期 |
-| **18** | **视觉无损** | **训练数据（推荐）** |
-| 23 | 高质量 | 一般发布 |
-| 28 | 中等 | 网络流媒体 |
-
-CRF 18 在 512×512 分辨率下，人眼几乎无法察觉与原始画面的区别。
-对于 AI 训练，这个质量级别足以保留人脸细节和嘴唇纹理。
-
----
-
-## 许可证
-
-MIT License
 
 ## 致谢
 
