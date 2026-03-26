@@ -183,20 +183,36 @@ SYNCNET_REPO = os.environ.get("SYNCNET_REPO", "/your/path/to/syncnet_python")
 
 ## 快速开始
 
-### 基本用法
+### 图形化界面 (推荐)
+
+本项目提供了一个基于 Gradio 的可视化界面，支持参数配置、实时日志查看、处理统计以及单个视频的诊断测试。
+
+**Windows 用户：**
+直接双击运行项目根目录下的 `start_env.bat`，根据命令行提示在浏览器中打开相应的地址（通常是 `http://127.0.0.1:7860`）。
+
+**其他系统 / 命令行启动：**
+```bash
+python app_gradio.py
+```
+
+### 命令行基本用法
 
 ```bash
 python main_pipeline.py --input /path/to/raw_videos --output /path/to/output
 ```
 
-### 自定义参数
+### 自定义参数与可插拔模块
+
+可以通过参数跳过特定的处理阶段（例如跳过去重和 SyncNet）：
 
 ```bash
 python main_pipeline.py \
     --input /data/raw_videos \
     --output /data/processed \
     --fps 25 \
-    --size 512
+    --size 512 \
+    --skip_dedup \
+    --skip_syncnet
 ```
 
 ### 示例
@@ -487,6 +503,11 @@ output_dataset/
 | `--output` | `output_dataset` | 输出目录路径 |
 | `--fps` | `25` | 目标帧率 |
 | `--size` | `512` | 目标正方形边长（像素） |
+| `--skip_dedup` | `False` | 跳过 MD5 去重阶段，直接处理输入目录视频 |
+| `--skip_jumpcut` | `False` | 跳过跳切检测阶段 |
+| `--skip_face` | `False` | 跳过人脸分析阶段（不进行居中裁剪，仅缩放） |
+| `--skip_hand` | `False` | 跳过手部遮挡检测阶段 |
+| `--skip_syncnet` | `False` | 跳过 SyncNet 唇音同步检测阶段 |
 
 ### 各阶段内部参数
 
