@@ -1,51 +1,28 @@
-# Core pipeline dependencies
-opencv-python
-numpy<2
+# ═══════════════════════════════════════════════
+#  视频数据集预处理管道 - 依赖清单
+# ═══════════════════════════════════════════════
+
+# ── 核心依赖 ──
+numpy==1.26.4
+opencv-contrib-python==4.8.1.78
 mediapipe==0.10.14
-scenedetect
+scenedetect[opencv]==0.6.7.1
+tqdm>=4.65
 
-# Additional dependencies found in environment
-# Machine Learning / AI
-#torch请单独安装
-#torch
-#torchaudio
-#torchvision
-timm
-einops
-safetensors
-huggingface_hub
-faiss-cpu
-scikit-image
+# ── SyncNet ──
+python_speech_features==0.6
 
-# Data Processing & Math
-scipy
-pandas
-matplotlib
-sympy
-mpmath
+# ── Web 界面 ──
+gradio>=6.0
 
-# Video/Audio Processing
-ImageIO
-sounddevice
-python_speech_features
-SpeechRecognition
+# ── PyTorch（根据你的 CUDA 版本选择） ──
+# 方式1: 直接指定（CUDA 11.8）
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.1.0+cu118
+torchaudio==2.1.0+cu118
+torchvision==0.16.0+cu118
 
-# Cloud & Network
-aliyun-python-sdk-core
-aliyun-python-sdk-kms
-oss2
-requests
-httpx
-urllib3
-
-# Utilities
-tqdm
-PyYAML
-filelock
-colorama
-rich
-click
-typer
-beautifulsoup4
-Markdown
-tabulate
+# 方式2: 如果用 CPU 版本，取消注释以下行
+# torch==2.1.0
+# torchaudio==2.1.0
+# torchvision==0.16.0
