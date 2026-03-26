@@ -1,0 +1,51 @@
+# Core pipeline dependencies
+opencv-python
+numpy<2
+mediapipe==0.10.14
+scenedetect
+
+# Additional dependencies found in environment
+# Machine Learning / AI
+#torch请单独安装
+#torch
+#torchaudio
+#torchvision
+timm
+einops
+safetensors
+huggingface_hub
+faiss-cpu
+scikit-image
+
+# Data Processing & Math
+scipy
+pandas
+matplotlib
+sympy
+mpmath
+
+# Video/Audio Processing
+ImageIO
+sounddevice
+python_speech_features
+SpeechRecognition
+
+# Cloud & Network
+aliyun-python-sdk-core
+aliyun-python-sdk-kms
+oss2
+requests
+httpx
+urllib3
+
+# Utilities
+tqdm
+PyYAML
+filelock
+colorama
+rich
+click
+typer
+beautifulsoup4
+Markdown
+tabulate
